@@ -1,10 +1,27 @@
-"use client";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 
-import { useState, useEffect } from "react";
+interface TaskRules {
+  budget_from: string;
+  budget_to: string;
+  deadline_days: string;
+  qty_freelancers: string;
+}
+
+interface TaskFormData {
+  title: string;
+  description: string;
+  tags: string;
+  budget_from: string;
+  budget_to: string;
+  deadline: string;
+  reminds: string;
+  all_auto_responses: boolean;
+  rules: TaskRules;
+}
 
 export default function TaskForm() {
-  const [token, setToken] = useState("");
-  const [formData, setFormData] = useState({
+  const [token, setToken] = useState<string>("");
+  const [formData, setFormData] = useState<TaskFormData>({
     title: "",
     description: "",
     tags: "",
@@ -26,10 +43,10 @@ export default function TaskForm() {
     if (storedToken) setToken(storedToken);
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     if (name.startsWith("rules.")) {
-      const key = name.split(".")[1];
+      const key = name.split(".")[1] as keyof TaskRules;
       setFormData((prev) => ({
         ...prev,
         rules: { ...prev.rules, [key]: value },
@@ -42,7 +59,7 @@ export default function TaskForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) {
       alert("Токен не установлен");
@@ -60,7 +77,6 @@ export default function TaskForm() {
       if (response.ok) {
         alert("Задача опубликована");
       } else {
-        console.log(result)
         alert(`Ошибка: ${result.error || "Неизвестная ошибка"}`);
       }
     } catch (error) {
