@@ -82,6 +82,7 @@ export default function TaskForm() {
       }
     } catch (error) {
       alert("Ошибка сети");
+      console.log(error);
     }
   };
 
