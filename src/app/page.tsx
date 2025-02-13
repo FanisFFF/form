@@ -182,7 +182,7 @@ export default function TaskForm() {
         </div>
 
         <fieldset className="border p-4 rounded mb-4">
-          <legend className="font-bold">Правила (Rules)</legend>
+          <legend className="font-bold">Правила </legend>
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
               <label className="block mb-1">
