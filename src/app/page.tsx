@@ -1,115 +1,253 @@
-'use client'
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+"use client";
 
-interface TaskRules {
-  budget_from: string;
-  budget_to: string;
-  deadline_days: string;
-  qty_freelancers: string;
-}
-
-interface TaskFormData {
-  title: string;
-  description: string;
-  tags: string;
-  budget_from: string;
-  budget_to: string;
-  deadline: string;
-  reminds: string;
-  all_auto_responses: boolean;
-  rules: TaskRules;
-}
+import { useState, useEffect, FormEvent } from "react";
 
 export default function TaskForm() {
-  const [token, setToken] = useState<string>("");
-  const [formData, setFormData] = useState<TaskFormData>({
-    title: "",
-    description: "",
-    tags: "",
-    budget_from: "",
-    budget_to: "",
-    deadline: "",
-    reminds: "",
-    all_auto_responses: false,
-    rules: {
-      budget_from: "",
-      budget_to: "",
-      deadline_days: "",
-      qty_freelancers: "",
-    },
-  });
+  const [token, setToken] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("");
+  const [budgetFrom, setBudgetFrom] = useState("");
+  const [budgetTo, setBudgetTo] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [reminds, setReminds] = useState("");
+  const [allAutoResponses, setAllAutoResponses] = useState(false);
+
+  const [ruleBudgetFrom, setRuleBudgetFrom] = useState("");
+  const [ruleBudgetTo, setRuleBudgetTo] = useState("");
+  const [ruleDeadlineDays, setRuleDeadlineDays] = useState("");
+  const [ruleQtyFreelancers, setRuleQtyFreelancers] = useState("");
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("api_token");
-    if (storedToken) setToken(storedToken);
+    const savedToken = localStorage.getItem("token");
+    if (savedToken) {
+      setToken(savedToken);
+    }
   }, []);
+  useEffect(() => {
+    localStorage.setItem("token", token);
+  }, [token]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    if (name.startsWith("rules.")) {
-      const key = name.split(".")[1] as keyof TaskRules;
-      setFormData((prev) => ({
-        ...prev,
-        rules: { ...prev.rules, [key]: value },
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: type === "checkbox" ? checked : value,
-      }));
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!token) {
-      alert("Токен не установлен");
-      return;
-    }
 
-    const url = `https://deadlinetaskbot.productlove.ru/api/v1/tasks/client/newhardtask?token=${token}`;
+    const rules = {
+      budget_from: Number(ruleBudgetFrom),
+      budget_to: Number(ruleBudgetTo),
+      deadline_days: Number(ruleDeadlineDays),
+      qty_freelancers: Number(ruleQtyFreelancers),
+    };
+
+    const baseUrl =
+      "https://deadlinetaskbot.productlove.ru/api/v1/tasks/client/newhardtask";
+    const url = new URL(baseUrl);
+
+    url.searchParams.append("token", token);
+    url.searchParams.append("title", title);
+    url.searchParams.append("description", description);
+    url.searchParams.append("tags", tags);
+    url.searchParams.append("budget_from", budgetFrom);
+    url.searchParams.append("budget_to", budgetTo);
+    url.searchParams.append("deadline", deadline);
+    url.searchParams.append("reminds", reminds);
+    url.searchParams.append("all_auto_responses", String(allAutoResponses));
+    url.searchParams.append("rules", JSON.stringify(rules));
+
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const result = await response.json();
+      const response = await fetch(url.toString());
       if (response.ok) {
         alert("Задача опубликована");
       } else {
-        alert(`Ошибка: ${result.error || "Неизвестная ошибка"}`);
+        alert("Ошибка публикации: " + response.status);
       }
-    } catch (error) {
-      alert("Ошибка сети");
-      console.log(error);
+    } catch (error:any) {
+      alert("Ошибка: " + error.message);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 shadow-lg border rounded-lg">
-      <h2 className="text-xl font-bold mb-4">Создание задачи</h2>
-      <input className="block w-full p-2 border rounded mb-2" placeholder="Токен" value={token} onChange={(e) => {
-        setToken(e.target.value);
-        localStorage.setItem("api_token", e.target.value);
-      }} />
-      <input className="block w-full p-2 border rounded mb-2" name="title" placeholder="Название" value={formData.title} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="description" placeholder="Описание" value={formData.description} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="tags" placeholder="Теги" value={formData.tags} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="budget_from" type="number" placeholder="Бюджет от" value={formData.budget_from} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="budget_to" type="number" placeholder="Бюджет до" value={formData.budget_to} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="deadline" type="number" placeholder="Дедлайн (дни)" value={formData.deadline} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="reminds" type="number" placeholder="Напоминания" value={formData.reminds} onChange={handleChange} />
-      <label className="flex items-center gap-2">
-        <input name="all_auto_responses" type="checkbox" checked={formData.all_auto_responses} onChange={handleChange} />
-        Разрешить автоответы
-      </label>
-      <h3 className="text-lg font-semibold mt-4">Правила</h3>
-      <input className="block w-full p-2 border rounded mb-2" name="rules.budget_from" type="number" placeholder="Бюджет от" value={formData.rules.budget_from} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="rules.budget_to" type="number" placeholder="Бюджет до" value={formData.rules.budget_to} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="rules.deadline_days" type="number" placeholder="Дедлайн (дни)" value={formData.rules.deadline_days} onChange={handleChange} />
-      <input className="block w-full p-2 border rounded mb-2" name="rules.qty_freelancers" type="number" placeholder="Кол-во фрилансеров" value={formData.rules.qty_freelancers} onChange={handleChange} />
-      <button className="w-full mt-4 p-2 bg-blue-500 text-white rounded" onClick={handleSubmit}>Создать задачу</button>
+    <div className="max-w-xl mx-auto mt-10 p-4 border rounded shadow">
+      <h1 className="text-2xl font-bold mb-4">Новая задача</h1>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label className="block mb-1">Token</label>
+          <input
+            type="text"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-1">Заголовок </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-1">Описание</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-1">
+            Теги 
+          </label>
+          <input
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1">
+              Бюджет от
+            </label>
+            <input
+              type="number"
+              value={budgetFrom}
+              onChange={(e) => setBudgetFrom(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+              required
+            />
+          </div>
+          <div>
+            <label className="block mb-1">
+              Бюджет до 
+            </label>
+            <input
+              type="number"
+              value={budgetTo}
+              onChange={(e) => setBudgetTo(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1">
+              Дедлайн (в днях)
+            </label>
+            <input
+              type="number"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+              required
+            />
+          </div>
+          <div>
+            <label className="block mb-1">
+              Напоминания 
+            </label>
+            <input
+              type="number"
+              value={reminds}
+              onChange={(e) => setReminds(e.target.value)}
+              className="w-full border px-3 py-2 rounded"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              checked={allAutoResponses}
+              onChange={(e) =>
+                setAllAutoResponses(e.target.checked)
+              }
+              className="mr-2"
+            />
+            Все автоматические ответы 
+          </label>
+        </div>
+
+        <fieldset className="border p-4 rounded mb-4">
+          <legend className="font-bold">Правила (Rules)</legend>
+          <div className="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1">
+                Бюджет от
+              </label>
+              <input
+                type="number"
+                value={ruleBudgetFrom}
+                onChange={(e) =>
+                  setRuleBudgetFrom(e.target.value)
+                }
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+            <div>
+              <label className="block mb-1">
+                Бюджет до
+              </label>
+              <input
+                type="number"
+                value={ruleBudgetTo}
+                onChange={(e) =>
+                  setRuleBudgetTo(e.target.value)
+                }
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+          </div>
+          <div className="mb-4 grid grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1">
+                Дедлайн (в днях)
+              </label>
+              <input
+                type="number"
+                value={ruleDeadlineDays}
+                onChange={(e) =>
+                  setRuleDeadlineDays(e.target.value)
+                }
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+            <div>
+              <label className="block mb-1">
+                Количество фрилансеров
+              </label>
+              <input
+                type="number"
+                value={ruleQtyFreelancers}
+                onChange={(e) =>
+                  setRuleQtyFreelancers(e.target.value)
+                }
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        >
+          Опубликовать задачу
+        </button>
+      </form>
     </div>
   );
 }
