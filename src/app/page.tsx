@@ -60,8 +60,12 @@ export default function TaskForm() {
       } else {
         alert("Ошибка публикации: " + response.status);
       }
-    } catch (error:any) {
-      alert("Ошибка: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert("Ошибка: " + error.message);
+      } else {
+        alert("Неизвестная ошибка");
+      }
     }
   };
 
